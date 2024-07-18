@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ExplicitAnimationsScreen extends StatefulWidget {
   const ExplicitAnimationsScreen({super.key});
@@ -12,99 +13,79 @@ class ExplicitAnimationsScreen extends StatefulWidget {
 
 class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
     with SingleTickerProviderStateMixin {
+  final TextEditingController _durationEditingController =
+      TextEditingController();
+  int _duration = 500;
+
   late final AnimationController _animationController = AnimationController(
     vsync: this,
-    duration: const Duration(
-      seconds: 5,
+    duration: Duration(
+      milliseconds: _duration,
     ),
-  );
+  )..addStatusListener(
+      (status) {
+        if (status == AnimationStatus.completed) {
+          _toggleVisible();
+          _animationController.reset();
+          _animationController.forward();
+        }
+      },
+    );
 
-  final Tween<Offset> _ltrOffsetTween = Tween<Offset>(
-    begin: Offset.zero,
-    end: const Offset(8.0, 0.0),
-  );
-  final Tween<Offset> _rtlOffsetTween = Tween<Offset>(
-    begin: Offset.zero,
-    end: const Offset(-8.0, 0.0),
-  );
+  late bool _visible = false;
 
-  late final Animation<Offset> _ltrOffsetAnimation =
-      _ltrOffsetTween.animate(CurvedAnimation(
-    parent: _animationController,
-    curve: const Interval(
-      0.0,
-      0.7,
-      curve: Curves.linear,
-    ),
-  ));
-  late final Animation<Offset> _rtlOffsetAnimation =
-      _rtlOffsetTween.animate(CurvedAnimation(
-    parent: _animationController,
-    curve: const Interval(
-      0.0,
-      0.7,
-      curve: Curves.linear,
-    ),
-  ));
-
-  late final Animation<double> _sizeAnimation = CurvedAnimation(
-    parent: _animationController,
-    curve: const Interval(
-      0.3,
-      1.0,
-      curve: Curves.linear,
-    ),
-  );
-  late final Animation<double> _fadeAnimation = Tween<double>(
-    begin: 0.0,
-    end: 1.0,
-  ).animate(
-    CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(
-        0.3,
-        1.0,
-        curve: Curves.linear,
-      ),
-    ),
-  );
-
-  bool _visible = true;
-  final int _interval = 1;
-
-  late Timer _timer;
-
-  void _onGo() {
-    _animationController.forward();
+  void _toggleVisible() {
+    setState(() {
+      _visible = !_visible;
+    });
   }
 
-  void _onReset() {
+  void _reset() {
+    setState(() {
+      _playing = false;
+    });
     _animationController.reset();
+  }
+
+  bool _playing = false;
+  void _togglePlay() {
+    if (_playing) {
+      _animationController.stop();
+    } else {
+      _animationController.forward();
+    }
+    setState(() {
+      _playing = !_playing;
+    });
   }
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: _interval), (timer) {
+    _durationEditingController.text = "500";
+    _durationEditingController.addListener(() {
       setState(() {
-        _visible = !_visible;
+        try {
+          _duration = int.parse(_durationEditingController.text);
+        } catch (e) {
+          _duration = 500;
+        }
       });
+      // _animationController.reset();
+      _animationController.duration = Duration(milliseconds: _duration);
+      print(_duration);
     });
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _durationEditingController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -118,59 +99,86 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
           Column(
             children: [
               BlinkRow(
+                visible: _visible,
                 reverse: true,
-                fadeAnimation: _fadeAnimation,
-                sizeAnimation: _sizeAnimation,
-                offsetAnimation: _rtlOffsetAnimation,
+                animationController: _animationController,
+                start: 0.8,
+                end: 1.0,
               ),
               const SizedBox(
                 height: 40,
               ),
               BlinkRow(
+                visible: _visible,
                 reverse: false,
-                fadeAnimation: _fadeAnimation,
-                sizeAnimation: _sizeAnimation,
-                offsetAnimation: _ltrOffsetAnimation,
+                animationController: _animationController,
+                start: 0.6,
+                end: 0.8,
               ),
               const SizedBox(
                 height: 40,
               ),
               BlinkRow(
+                visible: _visible,
                 reverse: true,
-                fadeAnimation: _fadeAnimation,
-                sizeAnimation: _sizeAnimation,
-                offsetAnimation: _rtlOffsetAnimation,
+                animationController: _animationController,
+                start: 0.4,
+                end: 0.6,
               ),
               const SizedBox(
                 height: 40,
               ),
               BlinkRow(
+                visible: _visible,
                 reverse: false,
-                fadeAnimation: _fadeAnimation,
-                sizeAnimation: _sizeAnimation,
-                offsetAnimation: _ltrOffsetAnimation,
+                animationController: _animationController,
+                start: 0.2,
+                end: 0.4,
               ),
               const SizedBox(
                 height: 40,
               ),
               BlinkRow(
+                visible: _visible,
                 reverse: true,
-                fadeAnimation: _fadeAnimation,
-                sizeAnimation: _sizeAnimation,
-                offsetAnimation: _rtlOffsetAnimation,
+                animationController: _animationController,
+                start: 0.0,
+                end: 0.2,
               ),
             ],
           ),
           const SizedBox(
-            height: 100,
+            height: 50,
           ),
-          ElevatedButton(
-            onPressed: _onGo,
-            child: const Text("Go!"),
+          SizedBox(
+            width: 160,
+            child: TextField(
+              controller: _durationEditingController,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 5,
+              decoration: const InputDecoration(
+                labelText: "Duration (milliseconds)",
+                labelStyle: TextStyle(color: Colors.white54),
+              ),
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
-          ElevatedButton(
-            onPressed: _onReset,
-            child: const Text("reset"),
+          const SizedBox(
+            height: 50,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: _togglePlay,
+                child: Text(!_playing ? "Play" : "Stop"),
+              ),
+              ElevatedButton(
+                onPressed: _reset,
+                child: const Text("Reset"),
+              ),
+            ],
           ),
         ],
       ),
@@ -178,21 +186,61 @@ class _ExplicitAnimationsScreenState extends State<ExplicitAnimationsScreen>
   }
 }
 
-class BlinkRow extends StatelessWidget {
+class BlinkRow extends StatefulWidget {
+  final bool visible;
   final bool reverse;
+  final double start;
+  final double end;
+
   const BlinkRow({
     super.key,
-    required Animation<double> fadeAnimation,
-    required Animation<double> sizeAnimation,
-    required Animation<Offset> offsetAnimation,
+    required AnimationController animationController,
     required this.reverse,
-  })  : _fadeAnimation = fadeAnimation,
-        _sizeAnimation = sizeAnimation,
-        _offsetAnimation = offsetAnimation;
+    required this.start,
+    required this.end,
+    required this.visible,
+  }) : _animationController = animationController;
 
-  final Animation<double> _fadeAnimation;
-  final Animation<double> _sizeAnimation;
-  final Animation<Offset> _offsetAnimation;
+  final AnimationController _animationController;
+
+  @override
+  State<BlinkRow> createState() => _BlinkRowState();
+}
+
+class _BlinkRowState extends State<BlinkRow> {
+  late final Animation<Offset> _offsetAnimation = Tween<Offset>(
+    begin: Offset(widget.reverse ? -1.0 : 1.0, 0),
+    end: Offset(widget.reverse ? -8.0 : 8.0, 0.0),
+  ).animate(CurvedAnimation(
+    parent: widget._animationController,
+    curve: Interval(
+      widget.start,
+      widget.end,
+      curve: Curves.linear,
+    ),
+  ));
+
+  late final Animation<double> _sizeAnimation = CurvedAnimation(
+    parent: widget._animationController,
+    curve: Interval(
+      widget.start,
+      widget.end,
+      curve: Curves.linear,
+    ),
+  );
+  late final Animation<double> _fadeAnimation = Tween<double>(
+    begin: 0.0,
+    end: 1.0,
+  ).animate(
+    CurvedAnimation(
+      parent: widget._animationController,
+      curve: Interval(
+        widget.start,
+        widget.end,
+        curve: Curves.linear,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -200,21 +248,26 @@ class BlinkRow extends StatelessWidget {
       children: [
         Center(
           child: Container(
-            color: const Color.fromARGB(255, 55, 9, 9),
+            color: widget.visible
+                ? Colors.red.shade400
+                : const Color.fromARGB(255, 40, 8, 8),
             width: 360,
             height: 40,
             child: Align(
-              alignment: reverse ? Alignment.topRight : Alignment.topLeft,
+              alignment:
+                  widget.reverse ? Alignment.topRight : Alignment.topLeft,
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: SizeTransition(
                   sizeFactor: _sizeAnimation,
                   axis: Axis.horizontal,
-                  axisAlignment: reverse ? 1.0 : -1.0,
+                  axisAlignment: widget.reverse ? 1.0 : -1.0,
                   child: Container(
                     width: 360,
                     height: 40,
-                    color: Colors.red,
+                    color: !widget.visible
+                        ? Colors.red.shade400
+                        : const Color.fromARGB(255, 40, 8, 8),
                   ),
                 ),
               ),
@@ -227,13 +280,16 @@ class BlinkRow extends StatelessWidget {
             width: 360,
             height: 40,
             child: Align(
-              alignment: reverse ? Alignment.topRight : Alignment.topLeft,
+              alignment:
+                  widget.reverse ? Alignment.topRight : Alignment.topLeft,
               child: SlideTransition(
                 position: _offsetAnimation,
                 child: Container(
                   width: 40,
                   height: 40,
-                  color: Colors.red,
+                  color: !widget.visible
+                      ? Colors.red.shade400
+                      : const Color.fromARGB(255, 40, 8, 8),
                 ),
               ),
             ),
@@ -253,14 +309,14 @@ class BlinkRow extends StatelessWidget {
                         width: 40,
                         height: 40,
                         color: Colors.transparent,
-                        child: Text(index.toString()),
+                        // child: Text(index.toString()),
                       );
                     } else {
                       return Container(
                         width: 40,
                         height: 40,
                         color: Colors.black,
-                        child: Text(index.toString()),
+                        // child: Text(index.toString()),
                       );
                     }
                   },
