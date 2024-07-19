@@ -223,7 +223,7 @@ class _BlinkRowState extends State<BlinkRow> {
   late final Animation<double> _sizeAnimation = CurvedAnimation(
     parent: widget._animationController,
     curve: Interval(
-      widget.start,
+      widget.start + 0.07,
       widget.end,
       curve: Curves.linear,
     ),
@@ -235,7 +235,7 @@ class _BlinkRowState extends State<BlinkRow> {
     CurvedAnimation(
       parent: widget._animationController,
       curve: Interval(
-        widget.start,
+        widget.start + 0.07,
         widget.end,
         curve: Curves.linear,
       ),
