@@ -1,6 +1,7 @@
 import 'package:animation_challenge/screens/custom_paint_screen.dart';
 import 'package:animation_challenge/screens/explicit_animations_screen.dart';
 import 'package:animation_challenge/screens/implicit_animations_screen.dart';
+import 'package:animation_challenge/screens/swiping_cards_screen.dart';
 import 'package:flutter/material.dart';
 
 class MenuScreen extends StatelessWidget {
@@ -50,6 +51,15 @@ class MenuScreen extends StatelessWidget {
                 );
               },
               child: const Text("Code Challenge #30"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _goToPage(
+                  context,
+                  const SwipingCardsScreen(),
+                );
+              },
+              child: const Text("Code Challenge #31"),
             ),
           ],
         ),
